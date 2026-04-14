@@ -24,6 +24,7 @@ import {
   deleteSession,
   getConfig,
   insertEvidence,
+  insertPersonFacts,
   listMembers,
   setSessionStatus,
   updateSession,
@@ -634,6 +635,82 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
         if (isAbortError(err)) throw err;
         console.warn("haiku map failed for bucket", bucket, err);
         haikuFailed = true;
+      }
+    }
+
+    // ---- Fact extraction (additive — failures never break the pipeline) ----
+    for (const [bucket, arr] of buckets) {
+      try {
+        const evidenceJson = buildEvidenceJson(arr, members, timeRange, opts.workflow);
+        const factPrompt = `Extract 2-5 structured facts about specific people from this evidence. Return ONLY valid JSON. Format: {"facts": [{"member_name": "Name", "fact_type": "shipped|reviewed|discussed|blocked|collaborated|led", "summary": "One-line summary", "evidence_ids": ["ev_1", "ev_2"]}]}`;
+        const factResult = await provider.complete({
+          model: cfg.classifier_model,
+          system: factPrompt,
+          messages: [
+            {
+              role: "user",
+              content: `Source bucket: ${bucket}\n\nEvidence JSON:\n\`\`\`json\n${evidenceJson}\n\`\`\``,
+            },
+          ],
+          max_tokens: 600,
+          temperature: 0.1,
+        });
+        totalInput += factResult.input_tokens;
+        totalOutput += factResult.output_tokens;
+
+        let parsed: { facts: Array<{ member_name: string; fact_type: string; summary: string; evidence_ids: string[] }> } | null = null;
+        try {
+          parsed = JSON.parse(factResult.text.trim());
+        } catch {
+          // Try regex extraction if direct parse fails
+          const match = factResult.text.match(/\{[\s\S]*"facts"[\s\S]*\}/);
+          if (match) {
+            try {
+              parsed = JSON.parse(match[0]);
+            } catch {
+              console.warn("[keepr] fact extraction: failed to parse JSON from bucket", bucket);
+            }
+          }
+        }
+
+        if (parsed?.facts?.length) {
+          const resolvedFacts: Array<{
+            member_id: number;
+            fact_type: string;
+            summary: string;
+            evidence_ids: number[];
+          }> = [];
+
+          for (const fact of parsed.facts) {
+            // Resolve member_name to member_id via case-insensitive match
+            const nameLow = (fact.member_name || "").toLowerCase();
+            const member = members.find(
+              (m) =>
+                m.display_name.toLowerCase() === nameLow ||
+                (m.github_handle || "").toLowerCase() === nameLow ||
+                (m.slack_user_id || "").toLowerCase() === nameLow
+            );
+            if (!member) continue;
+
+            // Convert ev_N strings to integer indices
+            const evidenceIds = (fact.evidence_ids || [])
+              .map((e) => parseInt(String(e).replace(/^ev_/, ""), 10))
+              .filter((n) => !isNaN(n));
+
+            resolvedFacts.push({
+              member_id: member.id,
+              fact_type: fact.fact_type,
+              summary: fact.summary,
+              evidence_ids: evidenceIds,
+            });
+          }
+
+          if (resolvedFacts.length > 0) {
+            await insertPersonFacts(sessionId, resolvedFacts);
+          }
+        }
+      } catch (err) {
+        console.warn("[keepr] fact extraction failed for bucket", bucket, err);
       }
     }
 

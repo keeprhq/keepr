@@ -11,24 +11,41 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PersonFact, QueryHistoryItem, TeamMember } from "../lib/types";
+import { getPersonFacts, getQueryHistory, saveQueryAnswer } from "../services/db";
+import { getConfig } from "../services/db";
+import { getProvider } from "../services/llm";
 
 // ---------------------------------------------------------------------------
-// Mock data — replace with real db calls when Lane A lands
+// LLM-backed query
 // ---------------------------------------------------------------------------
 
-const MOCK_FACTS: PersonFact[] = [
-  { id: 1, member_id: 1, session_id: 1, fact_type: "shipped", summary: "Shipped auth middleware rewrite (PR #247)", evidence_ids: [12, 15], extracted_at: "2026-04-10T10:00:00Z" },
-  { id: 2, member_id: 1, session_id: 1, fact_type: "reviewed", summary: "Reviewed payments migration PR with detailed feedback", evidence_ids: [8], extracted_at: "2026-04-09T14:00:00Z" },
-  { id: 3, member_id: 1, session_id: 1, fact_type: "discussed", summary: "Led architecture discussion on caching strategy in #backend", evidence_ids: [22, 23], extracted_at: "2026-04-08T09:00:00Z" },
-  { id: 4, member_id: 1, session_id: 2, fact_type: "shipped", summary: "Deployed rate limiter to production", evidence_ids: [31], extracted_at: "2026-04-03T16:00:00Z" },
-  { id: 5, member_id: 1, session_id: 2, fact_type: "collaborated", summary: "Paired with Jordan on database indexing optimization", evidence_ids: [35, 36], extracted_at: "2026-04-02T11:00:00Z" },
-];
-
-const mockQuery = async (question: string, factCount: number): Promise<string> => {
-  void question;
-  await new Promise((r) => setTimeout(r, 1500));
-  return `Based on ${factCount} accumulated facts: Alex has been actively shipping. In the past two weeks, they shipped the auth middleware rewrite (PR #247) and deployed the rate limiter to production. They also led an architecture discussion on caching strategy and paired with Jordan on database optimization. [fact_1][fact_4]`;
-};
+async function queryPersonFacts(
+  question: string,
+  facts: PersonFact[],
+  memberName: string
+): Promise<string> {
+  const cfg = await getConfig();
+  const provider = getProvider(cfg.llm_provider);
+  const factsJson = facts.slice(0, 200).map((f, i) => ({
+    id: `fact_${i + 1}`,
+    type: f.fact_type,
+    summary: f.summary,
+    date: f.extracted_at,
+  }));
+  const r = await provider.complete({
+    model: cfg.synthesis_model,
+    system: `You are answering questions about a team member named ${memberName}. Answer using ONLY the provided facts. Cite fact IDs in brackets like [fact_1]. If the facts don't contain enough to answer, say so. Be concise.`,
+    messages: [
+      {
+        role: "user",
+        content: `Facts:\n${JSON.stringify(factsJson, null, 2)}\n\nQuestion: ${question}`,
+      },
+    ],
+    max_tokens: 1000,
+    temperature: 0.2,
+  });
+  return r.text.trim();
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -40,13 +57,33 @@ interface PersonDetailProps {
 }
 
 export function PersonDetail({ member, onBack }: PersonDetailProps) {
-  const [facts] = useState<PersonFact[]>(MOCK_FACTS);
+  const [facts, setFacts] = useState<PersonFact[]>([]);
   const [queryText, setQueryText] = useState("");
   const [querying, setQuerying] = useState(false);
   const [currentAnswer, setCurrentAnswer] = useState<string | null>(null);
   const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load facts and query history from the database.
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const [f, h] = await Promise.all([
+          getPersonFacts(member.id),
+          getQueryHistory(member.id),
+        ]);
+        setFacts(f);
+        setQueryHistory(h);
+      } catch (e) {
+        console.error("[keepr] failed to load person facts:", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [member.id]);
 
   // Cmd+K focuses the query bar.
   useEffect(() => {
@@ -75,8 +112,11 @@ export function PersonDetail({ member, onBack }: PersonDetailProps) {
     setQuerying(true);
     setCurrentAnswer(null);
     try {
-      const answer = await mockQuery(q, facts.length);
+      const caveat = facts.length < 10 ? `Based on limited data (${facts.length} facts)... ` : "";
+      const raw = await queryPersonFacts(q, facts, member.display_name);
+      const answer = caveat + raw;
       setCurrentAnswer(answer);
+      await saveQueryAnswer(member.id, q, answer);
       setQueryHistory((prev) => [
         {
           id: Date.now(),

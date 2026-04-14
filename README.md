@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://github.com/keeprhq/keepr/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
   <a href="https://github.com/keeprhq/keepr/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/keeprhq/keepr/ci.yml?branch=main&label=CI" alt="Build Status" /></a>
-  <a href="https://github.com/keeprhq/keepr/releases"><img src="https://img.shields.io/github/v/release/keeprhq/keepr?label=release" alt="Release" /></a>
+  <a href="https://github.com/keeprhq/keepr/releases/latest"><img src="https://img.shields.io/github/v/release/keeprhq/keepr?include_prereleases&label=release" alt="Release" /></a>
 </p>
 
 ---

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Keepr -- AI Chief of Staff for Engineering Managers</title>
+  <meta name="description" content="Keepr turns Slack and GitHub exhaust into weekly team pulses and 1:1 prep. On-device, privacy-first, open source." />
+  <meta property="og:title" content="Keepr" />
+  <meta property="og:description" content="AI Chief of Staff for engineering managers. On-device, privacy-first, open source." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://keeprhq.github.io/keepr/" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <style>
+    /* --------------------------------------------------------
+       Fonts
+       Inter for body, Newsreader for display headings
+       -------------------------------------------------------- */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap');
+
+    /* --------------------------------------------------------
+       Reset
+       -------------------------------------------------------- */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* --------------------------------------------------------
+       Base
+       -------------------------------------------------------- */
+    :root {
+      --bg: #FAFAF9;
+      --fg: #1C1917;
+      --fg-muted: #57534E;
+      --border: #1C1917;
+      --accent: #1C1917;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* --------------------------------------------------------
+       Layout
+       -------------------------------------------------------- */
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* --------------------------------------------------------
+       Header
+       -------------------------------------------------------- */
+    header {
+      padding: 80px 0 0;
+    }
+
+    .wordmark {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 1.125rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: 2px solid var(--border);
+      background: transparent;
+      color: var(--fg);
+    }
+
+    /* --------------------------------------------------------
+       Hero
+       -------------------------------------------------------- */
+    .hero {
+      padding: 64px 0 48px;
+    }
+
+    .hero h1 {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 400;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      max-width: 580px;
+    }
+
+    .hero p {
+      margin-top: 24px;
+      font-size: 1.0625rem;
+      line-height: 1.7;
+      color: var(--fg-muted);
+      max-width: 520px;
+    }
+
+    /* --------------------------------------------------------
+       CTA
+       -------------------------------------------------------- */
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 40px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 12px 24px;
+      border: 2px solid var(--border);
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .btn:focus-visible {
+      outline: 3px solid var(--border);
+      outline-offset: 2px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover {
+      background: #292524;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--fg);
+    }
+
+    .btn-secondary:hover {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    /* --------------------------------------------------------
+       Divider
+       -------------------------------------------------------- */
+    hr {
+      border: none;
+      border-top: 2px solid var(--border);
+      margin: 0;
+    }
+
+    /* --------------------------------------------------------
+       Features
+       -------------------------------------------------------- */
+    .features {
+      padding: 48px 0;
+    }
+
+    .features h2 {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      margin-bottom: 32px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .feature {
+      padding: 20px 0;
+      border-top: 1px solid #D6D3D1;
+    }
+
+    .feature:last-child {
+      border-bottom: 1px solid #D6D3D1;
+    }
+
+    .feature h3 {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .feature p {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--fg-muted);
+    }
+
+    /* --------------------------------------------------------
+       Privacy
+       -------------------------------------------------------- */
+    .privacy {
+      padding: 48px 0;
+    }
+
+    .privacy h2 {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      margin-bottom: 16px;
+    }
+
+    .privacy p {
+      font-size: 0.9375rem;
+      line-height: 1.7;
+      color: var(--fg-muted);
+      max-width: 560px;
+    }
+
+    .privacy p + p {
+      margin-top: 12px;
+    }
+
+    /* --------------------------------------------------------
+       Install
+       -------------------------------------------------------- */
+    .install {
+      padding: 48px 0;
+    }
+
+    .install h2 {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      margin-bottom: 20px;
+    }
+
+    .code-block {
+      background: var(--fg);
+      color: var(--bg);
+      font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      padding: 20px 24px;
+      border: 2px solid var(--border);
+      overflow-x: auto;
+    }
+
+    .code-block .comment {
+      color: #A8A29E;
+    }
+
+    /* --------------------------------------------------------
+       Footer
+       -------------------------------------------------------- */
+    footer {
+      padding: 48px 0;
+      border-top: 2px solid var(--border);
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+    }
+
+    footer p {
+      font-size: 0.8125rem;
+      color: var(--fg-muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      font-size: 0.8125rem;
+      color: var(--fg-muted);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+    }
+
+    .footer-links a:hover {
+      color: var(--fg);
+      border-bottom-color: var(--fg);
+    }
+
+    .footer-links a:focus-visible {
+      outline: 2px solid var(--border);
+      outline-offset: 2px;
+    }
+
+    /* --------------------------------------------------------
+       Responsive
+       -------------------------------------------------------- */
+    @media (max-width: 480px) {
+      header {
+        padding: 48px 0 0;
+      }
+
+      .hero {
+        padding: 40px 0 32px;
+      }
+
+      .cta-row {
+        flex-direction: column;
+      }
+
+      .btn {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <header>
+      <div class="wordmark">Keepr</div>
+      <div class="badge-row">
+        <span class="badge">Open Source</span>
+        <span class="badge">MIT License</span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h1>AI Chief of Staff for engineering managers</h1>
+      <p>
+        Keepr turns your team's Slack and GitHub exhaust into weekly
+        team pulses and 1:1 prep. It runs on your laptop. Your data
+        never touches a middleman server.
+      </p>
+      <div class="cta-row">
+        <a href="https://github.com/keeprhq/keepr/releases/latest" class="btn btn-primary">
+          Download for macOS
+        </a>
+        <a href="https://github.com/keeprhq/keepr" class="btn btn-secondary">
+          View on GitHub
+        </a>
+      </div>
+    </section>
+
+    <hr />
+
+    <section class="features">
+      <h2>What it does</h2>
+      <div class="feature-grid">
+        <div class="feature">
+          <h3>Team pulse</h3>
+          <p>Monday-morning read of what happened across your team last week, evidence-backed and cited.</p>
+        </div>
+        <div class="feature">
+          <h3>1:1 prep</h3>
+          <p>Context for an upcoming 1:1 with recent work, open threads, and follow-up items.</p>
+        </div>
+        <div class="feature">
+          <h3>Weekly engineering update</h3>
+          <p>Stakeholder-ready summary: shipped, in progress, blocked, upcoming.</p>
+        </div>
+        <div class="feature">
+          <h3>Local memory</h3>
+          <p>Observed facts persisted as plain markdown files. Open them in Obsidian, grep, or commit to a private repo.</p>
+        </div>
+        <div class="feature">
+          <h3>Zero telemetry</h3>
+          <p>Nothing phones home. No backend, no account, no analytics. The founder cannot see your sessions.</p>
+        </div>
+      </div>
+    </section>
+
+    <hr />
+
+    <section class="privacy">
+      <h2>Privacy posture</h2>
+      <p>
+        Keepr operates no servers. Your data leaves your laptop in exactly
+        two directions: to the original sources you already trust (Slack, GitHub)
+        and to whichever LLM provider you configured.
+      </p>
+      <p>
+        No middleman vendor holds your data. Your team's content is never
+        pooled with other customers. The number of parties who see it is
+        two instead of three.
+      </p>
+    </section>
+
+    <hr />
+
+    <section class="install">
+      <h2>Get started</h2>
+      <div class="code-block">
+        <span class="comment"># Clone and run from source</span><br />
+        git clone https://github.com/keeprhq/keepr.git<br />
+        cd keepr<br />
+        npm install<br />
+        npx tauri dev
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-inner">
+        <p>Keepr is MIT-licensed open-source software.</p>
+        <nav class="footer-links">
+          <a href="https://github.com/keeprhq/keepr">GitHub</a>
+          <a href="https://github.com/keeprhq/keepr/releases/latest">Releases</a>
+          <a href="https://github.com/keeprhq/keepr/blob/main/CONTRIBUTING.md">Contributing</a>
+        </nav>
+      </div>
+    </footer>
+
+  </div>
+
+</body>
+</html>

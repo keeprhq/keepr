@@ -36,6 +36,7 @@ export function Settings() {
   const [jiraProjects, setJiraProjects] = useState<jira.JiraProjectRemote[]>([]);
   const [linearKey, setLinearKey] = useState("");
   const [linearTeams, setLinearTeams] = useState<linear.LinearTeamRemote[]>([]);
+  const [llmSaveStatus, setLlmSaveStatus] = useState<"idle" | "saved" | "error">("idle");
 
   const load = async () => {
     const freshCfg = await getConfig();
@@ -238,11 +239,11 @@ export function Settings() {
                   setCfg({ ...cfg, synthesis_model: e.target.value });
                 }
               }}
-              onBlur={() => {
+              onSave={async () => {
                 if (cfg.llm_provider === "custom") {
-                  setConfig({ custom_llm_synthesis_model: cfg.custom_llm_synthesis_model, synthesis_model: cfg.custom_llm_synthesis_model });
+                  await setConfig({ custom_llm_synthesis_model: cfg.custom_llm_synthesis_model, synthesis_model: cfg.custom_llm_synthesis_model });
                 } else {
-                  setConfig({ synthesis_model: cfg.synthesis_model });
+                  await setConfig({ synthesis_model: cfg.synthesis_model });
                 }
               }}
             />
@@ -259,11 +260,11 @@ export function Settings() {
                   setCfg({ ...cfg, classifier_model: e.target.value });
                 }
               }}
-              onBlur={() => {
+              onSave={async () => {
                 if (cfg.llm_provider === "custom") {
-                  setConfig({ custom_llm_classifier_model: cfg.custom_llm_classifier_model, classifier_model: cfg.custom_llm_classifier_model });
+                  await setConfig({ custom_llm_classifier_model: cfg.custom_llm_classifier_model, classifier_model: cfg.custom_llm_classifier_model });
                 } else {
-                  setConfig({ classifier_model: cfg.classifier_model });
+                  await setConfig({ classifier_model: cfg.classifier_model });
                 }
               }}
             />

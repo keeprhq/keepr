@@ -109,8 +109,10 @@ function inline(s: string, evById: Map<string, EvidenceItem>): string {
     const ev = evById.get(id);
     const n = id.replace("ev_", "");
     if (!ev) return `<sup class="cite dangling">${n}</sup>`;
+    const preview = ev.content.slice(0, 160);
+    const ellipsis = ev.content.length > 160 ? "\u2026" : "";
     return `<sup class="cite" data-ev="${id}" title="${esc(
-      ev.content.slice(0, 160)
+      preview + ellipsis
     )}">${n}</sup>`;
   });
   out = out.replace(/`([^`]+)`/g, "<code>$1</code>");

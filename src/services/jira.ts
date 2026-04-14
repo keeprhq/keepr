@@ -26,10 +26,10 @@ async function jiraBaseUrl(): Promise<string> {
   return cfg.jira_cloud_url.replace(/\/+$/, "");
 }
 
-async function jira<T>(path: string): Promise<T> {
+async function jira<T>(path: string, signal?: AbortSignal): Promise<T> {
   const base = await jiraBaseUrl();
   const headers = await jiraHeaders();
-  const res = await fetch(`${base}${path}`, { headers });
+  const res = await fetch(`${base}${path}`, { headers, signal });
   if (!res.ok) {
     throw new Error(`Jira ${path}: ${res.status} ${res.statusText}`);
   }
@@ -85,7 +85,7 @@ export interface FetchedJiraComment {
 export async function fetchProjectActivity(
   projectKey: string,
   sinceIso: string,
-  opts: { forceRefresh?: boolean } = {}
+  opts: { forceRefresh?: boolean; signal?: AbortSignal } = {}
 ): Promise<FetchedJiraIssue[]> {
   const email = await getSecret(SECRET_KEYS.jiraEmail);
   const token = await getSecret(SECRET_KEYS.jiraToken);
@@ -122,7 +122,10 @@ export async function fetchProjectActivity(
         }> };
       };
     }>;
-  }>(`/rest/api/3/search?jql=${jql}&maxResults=100&fields=summary,description,status,assignee,reporter,created,updated,comment`);
+  }>(
+    `/rest/api/3/search?jql=${jql}&maxResults=100&fields=summary,description,status,assignee,reporter,created,updated,comment`,
+    opts.signal
+  );
 
   const base = await jiraBaseUrl();
   const out: FetchedJiraIssue[] = [];

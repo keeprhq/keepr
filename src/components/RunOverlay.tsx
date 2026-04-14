@@ -43,11 +43,31 @@ function useElapsed(running: boolean) {
 export function RunOverlay({
   state,
   onDismiss,
+  onCancel,
 }: {
   state: RunState | null;
   onDismiss: () => void;
+  // Fires when the user clicks Cancel during a running workflow. The
+  // overlay stays visible until the abort propagates through the pipeline
+  // and App.tsx clears runState; that usually takes under a second.
+  // Optional so RunOverlay can still be used in contexts that don't
+  // support cancellation.
+  onCancel?: () => void;
 }) {
   if (!state) return null;
+
+  // Dev-mode guard: if the pipeline emits a stage string we don't know
+  // about, the progress bar gets stuck and the labels won't advance.
+  // Surface this loudly in dev so backend/frontend drift gets caught.
+  if (
+    import.meta.env.DEV &&
+    state.stage !== "done" &&
+    state.stage !== "error" &&
+    !STAGES.includes(state.stage)
+  ) {
+    console.warn(`[RunOverlay] Unknown stage "${state.stage}" — progress bar may be stuck.`);
+  }
+
   const stageIndex = STAGES.indexOf(state.stage);
   const isDone = state.stage === "done";
   const isError = state.stage === "error";
@@ -138,6 +158,16 @@ export function RunOverlay({
           })}
         </div>
 
+        {isRunning && onCancel && (
+          <div className="mt-7 flex justify-end">
+            <button
+              onClick={onCancel}
+              className="rounded-md border border-hairline bg-canvas px-4 py-2 text-sm text-ink-soft transition-colors duration-180 hover:border-ink/25 hover:text-ink"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
         {(isDone || isError) && (
           <div className="mt-7 flex justify-end gap-2">
             {isError && (

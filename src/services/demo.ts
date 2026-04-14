@@ -299,6 +299,11 @@ export interface DemoRunOptions {
   targetMemberId?: number | null;
   daysBack: number;
   onProgress?: (stage: string, detail?: string) => void;
+  // Accepted for API parity with RunOptions so App.tsx can pass the same
+  // args into either runner. Demo runs are instant (fixtures), so the
+  // signal is never actually checked — cancelling during demo mode has
+  // no observable effect.
+  signal?: AbortSignal;
 }
 
 export interface DemoRunResult {

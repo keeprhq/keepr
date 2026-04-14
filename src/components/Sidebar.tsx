@@ -3,7 +3,6 @@
 // active row at a time.
 
 import type { SessionRow, TeamMember } from "../lib/types";
-import wordmarkSvg from "../assets/wordmark.svg";
 
 export type ViewKey =
   | { kind: "home" }
@@ -46,7 +45,7 @@ export function Sidebar({ sessions, members, topics, view, onSelect, integration
             view.kind === "home" ? "text-ink" : "text-ink-soft hover:text-ink"
           }`}
         >
-          <img src={wordmarkSvg} alt="Keepr" className="h-[17px]" />
+          <span className="display-serif text-[17px] leading-none">Keepr</span>
           <span className="text-[10px] uppercase tracking-[0.14em] text-ink-faint">
             home
           </span>
@@ -66,7 +65,12 @@ export function Sidebar({ sessions, members, topics, view, onSelect, integration
             ) : undefined
           }
         >
-          {sessions.length === 0 && <EmptyHint>No sessions yet</EmptyHint>}
+          {sessions.length === 0 && (
+            <EmptyHint>
+              Press <span className="mono text-ink-muted">⌘K</span> to run
+              your first team pulse
+            </EmptyHint>
+          )}
           {sessions.slice(0, 15).map((s) => {
               const isArchived = !!s.archived_at;
               const baseLabel = WORKFLOW_LABELS[s.workflow_type] || s.workflow_type;
@@ -234,7 +238,7 @@ function Item({
       {active && (
         <span className="absolute left-0 top-1/2 h-[14px] w-[2px] -translate-y-1/2 rounded-full bg-ink" />
       )}
-      <span className="flex-1 truncate">{label}</span>
+      <span className="flex-1 truncate" title={label}>{label}</span>
       {meta && (
         <span
           className={`shrink-0 text-[10px] tabular-nums group-hover:hidden ${

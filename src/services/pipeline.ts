@@ -21,6 +21,7 @@ import type {
 } from "../lib/types";
 import {
   createSession,
+  deleteSession,
   getConfig,
   insertEvidence,
   listMembers,
@@ -37,6 +38,7 @@ import { fetchProjectActivity, type FetchedJiraIssue } from "./jira";
 import { fetchTeamActivity, type FetchedLinearIssue } from "./linear";
 import { getProvider, setCustomConfig } from "./llm";
 import { writeMemory, readMemoryContext } from "./memory";
+import { throwIfAborted, isAbortError } from "../lib/abort";
 
 // ---- Normalization -------------------------------------------------------
 
@@ -341,6 +343,11 @@ export interface RunOptions {
   daysBack: number;
   forceRefresh?: boolean;
   onProgress?: (stage: string, detail?: string) => void;
+  // When set, the pipeline checks signal.aborted at every loop boundary
+  // and passes the signal down to every HTTP call. On abort the session
+  // row is DELETED (not marked failed) so cancelled runs don't clutter
+  // the sidebar. See src/lib/abort.ts.
+  signal?: AbortSignal;
 }
 
 export interface RunResult {
@@ -386,10 +393,16 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
     // and the second run fetched only items after "now" → zero items.
     // The cache is valuable for retry-within-a-session (not yet built),
     // not for blocking fresh sessions from seeing the full window.
-    const fetchOpts = { forceRefresh: true };
+    //
+    // `signal` flows into each fetch helper so HTTP calls abort mid-flight
+    // on user cancel. Every inner catch re-throws `isAbortError(err)` so
+    // a cancelled run doesn't get silently reduced to "that source failed,
+    // let's try the next one". See src/lib/abort.ts.
+    const fetchOpts = { forceRefresh: true, signal: opts.signal };
 
     // GitHub
     for (const repo of cfg.selected_github_repos) {
+      throwIfAborted(opts.signal);
       progress("fetch", `GitHub: ${repo.owner}/${repo.repo}`);
       try {
         const prs = await fetchRepoActivity(
@@ -400,6 +413,7 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
         );
         allItems.push(...normalizeGithub(prs, `${repo.owner}/${repo.repo}`));
       } catch (err) {
+        if (isAbortError(err)) throw err;
         console.warn("github fetch failed", repo, err);
       }
     }
@@ -409,11 +423,13 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
     try {
       const info = await slackAuthTest();
       teamDomain = info.team.toLowerCase().replace(/[^a-z0-9-]/g, "");
-    } catch {
+    } catch (err) {
+      if (isAbortError(err)) throw err;
       // ignore — if slack isn't connected we just skip
     }
 
     for (const ch of cfg.selected_slack_channels) {
+      throwIfAborted(opts.signal);
       progress("fetch", `Slack: #${ch.name}`);
       try {
         const msgs = await fetchChannelHistory(
@@ -424,12 +440,14 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
         );
         allItems.push(...normalizeSlack(msgs));
       } catch (err) {
+        if (isAbortError(err)) throw err;
         console.warn("slack fetch failed", ch, err);
       }
     }
 
     // Jira
     for (const proj of cfg.selected_jira_projects || []) {
+      throwIfAborted(opts.signal);
       progress("fetch", `Jira: ${proj.key}`);
       try {
         const issues = await fetchProjectActivity(
@@ -439,12 +457,14 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
         );
         allItems.push(...normalizeJira(issues, proj.key));
       } catch (err) {
+        if (isAbortError(err)) throw err;
         console.warn("jira fetch failed", proj, err);
       }
     }
 
     // Linear
     for (const team of cfg.selected_linear_teams || []) {
+      throwIfAborted(opts.signal);
       progress("fetch", `Linear: ${team.key}`);
       try {
         const issues = await fetchTeamActivity(
@@ -455,10 +475,12 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
         );
         allItems.push(...normalizeLinear(issues, team.key));
       } catch (err) {
+        if (isAbortError(err)) throw err;
         console.warn("linear fetch failed", team, err);
       }
     }
 
+    throwIfAborted(opts.signal);
     progress("prune", `Pruning ${allItems.length} raw items`);
 
     // Pre-check: bail early with a specific message if no data sources
@@ -569,6 +591,7 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
     }
 
     // ---- Map (Haiku per bucket) ----
+    throwIfAborted(opts.signal);
     if (cfg.llm_provider === "custom") {
       setCustomConfig({
         base_url: cfg.custom_llm_base_url,
@@ -585,6 +608,7 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
     const bucketSummaries: string[] = [];
 
     for (const [bucket, arr] of buckets) {
+      throwIfAborted(opts.signal);
       const evidenceJson = buildEvidenceJson(arr, members, timeRange, opts.workflow);
       try {
         const r = await provider.complete({
@@ -598,6 +622,7 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
           ],
           max_tokens: 600,
           temperature: 0.1,
+          signal: opts.signal,
         });
         totalInput += r.input_tokens;
         totalOutput += r.output_tokens;
@@ -606,6 +631,7 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
           bucketSummaries.push(`### Source: ${bucket}\n\n${text}`);
         }
       } catch (err) {
+        if (isAbortError(err)) throw err;
         console.warn("haiku map failed for bucket", bucket, err);
         haikuFailed = true;
       }
@@ -638,6 +664,7 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
     });
 
     // ---- Reduce (Sonnet) ----
+    throwIfAborted(opts.signal);
     progress("synthesize", "Synthesizing the final output");
     const systemPrompt =
       opts.workflow === "team_pulse" ? teamPulsePrompt
@@ -681,6 +708,7 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
       messages: [{ role: "user", content: userBlock }],
       max_tokens: isLongForm ? 5000 : 3000,
       temperature: 0.25,
+      signal: opts.signal,
     });
     totalInput += synth.input_tokens;
     totalOutput += synth.output_tokens;
@@ -724,6 +752,17 @@ export async function runWorkflow(opts: RunOptions): Promise<RunResult> {
 
     return { sessionId, outputPath, markdown, costUsd };
   } catch (err: any) {
+    // User cancelled the run. Delete the session row (and cascade its
+    // evidence) so a misclick doesn't clutter the sidebar. Re-throw the
+    // AbortError so App.tsx can clear runState without showing a toast.
+    if (isAbortError(err)) {
+      try {
+        await deleteSession(sessionId);
+      } catch (delErr) {
+        console.warn("pipeline: failed to delete cancelled session row", delErr);
+      }
+      throw err;
+    }
     console.error("pipeline failed", err);
     await setSessionStatus(sessionId, "failed", err?.message || String(err));
     throw err;

@@ -218,6 +218,15 @@ export async function setSessionStatus(
   });
 }
 
+// Used by the pipeline's AbortError path (user cancelled a run) and by
+// SessionReader's "Delete" action on a failed session. Evidence rows
+// cascade via ON DELETE CASCADE (src-tauri/src/lib.rs:48) so there is no
+// orphan cleanup to do here.
+export async function deleteSession(id: number): Promise<void> {
+  const d = await db();
+  await d.execute("DELETE FROM sessions WHERE id = ?", [id]);
+}
+
 // ---- Evidence ------------------------------------------------------------
 
 export async function insertEvidence(

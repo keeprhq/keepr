@@ -28,7 +28,6 @@ export function Settings() {
   const [slackChannels, setSlackChannels] = useState<slack.SlackChannel[]>([]);
   const [ghRepos, setGhRepos] = useState<Array<{ full_name: string; owner: { login: string } }>>([]);
   const [llmKey, setLlmKey] = useState("");
-  const [llmSaveStatus, setLlmSaveStatus] = useState<"idle" | "saved" | "error">("idle");
   const [slackToken, setSlackToken] = useState("");
   const [ghToken, setGhToken] = useState("");
   const [jiraEmail, setJiraEmail] = useState("");
@@ -215,10 +214,7 @@ export function Settings() {
                     className={inputCls}
                     value={llmKey}
                     placeholder="sk-…"
-                    onChange={(e) => {
-                      setLlmKey(e.target.value);
-                      if (llmSaveStatus !== "idle") setLlmSaveStatus("idle");
-                    }}
+                    onChange={(e) => setLlmKey(e.target.value)}
                   />
                   <Ghost onClick={saveKey}>
                     {llmSaveStatus === "saved" ? "Saved" : llmSaveStatus === "error" ? "Failed" : "Save"}
@@ -231,7 +227,7 @@ export function Settings() {
             );
           })()}
           <Field label="Synthesis model">
-            <input
+            <AutoSaveInput
               className={inputCls}
               value={cfg.llm_provider === "custom" ? (cfg.custom_llm_synthesis_model || "") : cfg.synthesis_model}
               placeholder={cfg.llm_provider === "custom" ? "e.g. llama3.1:70b" : undefined}
@@ -252,7 +248,7 @@ export function Settings() {
             />
           </Field>
           <Field label="Classifier model">
-            <input
+            <AutoSaveInput
               className={inputCls}
               value={cfg.llm_provider === "custom" ? (cfg.custom_llm_classifier_model || "") : cfg.classifier_model}
               placeholder={cfg.llm_provider === "custom" ? "e.g. llama3.1:8b" : undefined}
@@ -278,13 +274,12 @@ export function Settings() {
           <Field label="Bot token">
             <div className="flex gap-2">
               <input type="password" className={inputCls} value={slackToken} onChange={(e) => setSlackToken(e.target.value)} />
-              <Ghost onClick={async () => {
+              <SaveButton onSave={async () => {
                 await setSecret(SECRET_KEYS.slackBot, slackToken);
                 if (slackToken.trim()) {
                   await upsertIntegration("slack", {});
                 }
-                alert("Saved");
-              }}>Save</Ghost>
+              }} />
             </div>
           </Field>
           <div className="mb-3">
@@ -325,13 +320,12 @@ export function Settings() {
           <Field label="Personal access token">
             <div className="flex gap-2">
               <input type="password" className={inputCls} value={ghToken} onChange={(e) => setGhToken(e.target.value)} />
-              <Ghost onClick={async () => {
+              <SaveButton onSave={async () => {
                 await setSecret(SECRET_KEYS.github, ghToken);
                 if (ghToken.trim()) {
                   await upsertIntegration("github", {});
                 }
-                alert("Saved");
-              }}>Save</Ghost>
+              }} />
             </div>
           </Field>
           <div className="mb-3">
@@ -368,7 +362,7 @@ export function Settings() {
           <Field label="Atlassian Cloud URL">
             <div className="flex gap-2">
               <input className={inputCls} value={jiraUrl} placeholder="https://your-org.atlassian.net" onChange={(e) => setJiraUrl(e.target.value)} />
-              <Ghost onClick={async () => { await setConfig({ jira_cloud_url: jiraUrl }); alert("Saved"); }}>Save</Ghost>
+              <SaveButton onSave={async () => { await setConfig({ jira_cloud_url: jiraUrl }); }} />
             </div>
           </Field>
           <Field label="Email">
@@ -377,15 +371,14 @@ export function Settings() {
           <Field label="API token">
             <div className="flex gap-2">
               <input type="password" className={inputCls} value={jiraToken} placeholder="Jira API token" onChange={(e) => setJiraToken(e.target.value)} />
-              <Ghost onClick={async () => {
+              <SaveButton onSave={async () => {
                 await setSecret(SECRET_KEYS.jiraEmail, jiraEmail);
                 await setSecret(SECRET_KEYS.jiraToken, jiraToken);
                 await setConfig({ jira_cloud_url: jiraUrl });
                 if (jiraEmail.trim() && jiraToken.trim()) {
                   await upsertIntegration("jira", { email: jiraEmail.trim() });
                 }
-                alert("Saved");
-              }}>Save</Ghost>
+              }} />
               <Ghost onClick={() => openExternal("https://id.atlassian.com/manage-profile/security/api-tokens")}>Get token</Ghost>
             </div>
           </Field>
@@ -429,13 +422,12 @@ export function Settings() {
           <Field label="API key">
             <div className="flex gap-2">
               <input type="password" className={inputCls} value={linearKey} placeholder="lin_api_..." onChange={(e) => setLinearKey(e.target.value)} />
-              <Ghost onClick={async () => {
+              <SaveButton onSave={async () => {
                 await setSecret(SECRET_KEYS.linear, linearKey);
                 if (linearKey.trim()) {
                   await upsertIntegration("linear", {});
                 }
-                alert("Saved");
-              }}>Save</Ghost>
+              }} />
               <Ghost onClick={() => openExternal("https://linear.app/settings/account/security")}>Get key</Ghost>
             </div>
           </Field>
@@ -514,7 +506,7 @@ export function Settings() {
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Ghost onClick={async () => {
+                  <SaveButton onSave={async () => {
                     await upsertMember({
                       id: m.id,
                       display_name: m.display_name,
@@ -524,8 +516,8 @@ export function Settings() {
                       linear_username: m.linear_username,
                       slug: slugify(m.display_name),
                     });
-                    load();
-                  }}>Save</Ghost>
+                    await load();
+                  }} />
                   <button onClick={async () => { await deleteMember(m.id); load(); }} className="text-xs text-ink-faint hover:text-ink">delete</button>
                 </div>
               </div>
@@ -543,12 +535,12 @@ export function Settings() {
           <p className="mb-3 text-xs text-ink-faint">
             Paste your engineering ladder as markdown. Used by perf evaluation and promo readiness workflows.
           </p>
-          <textarea
-            className={`${inputCls} min-h-[120px] resize-y font-mono text-xs`}
+          <RubricTextarea
             value={cfg.engineering_rubric || ""}
-            placeholder={"# Engineering Ladder\n\n## L3 — Mid-level\n- Technical execution: ...\n- Collaboration: ...\n\n## L4 — Senior\n- Technical execution: ...\n- Collaboration: ..."}
-            onChange={(e) => setCfg({ ...cfg, engineering_rubric: e.target.value })}
-            onBlur={() => setConfig({ engineering_rubric: cfg.engineering_rubric || null })}
+            onChange={(v) => setCfg({ ...cfg, engineering_rubric: v })}
+            onSave={() =>
+              setConfig({ engineering_rubric: cfg.engineering_rubric || null })
+            }
           />
         </Panel>
 
@@ -651,5 +643,136 @@ function Ghost(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
       {...props}
       className="inline-flex items-center gap-2 whitespace-nowrap rounded-md border border-hairline bg-canvas px-3 py-2 text-xs text-ink-soft transition-all duration-180 ease-calm hover:border-ink/20 hover:text-ink"
     />
+  );
+}
+
+// Consistent save-state button. Replaces Ghost for every save action.
+// Manages its own idle → saving → saved → error lifecycle. aria-live
+// announces state changes to screen readers.
+function SaveButton({
+  onSave,
+  label = "Save",
+}: {
+  onSave: () => Promise<void>;
+  label?: string;
+}) {
+  const [status, setStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  return (
+    <button
+      disabled={status === "saving"}
+      onClick={async () => {
+        setStatus("saving");
+        try {
+          await onSave();
+          setStatus("saved");
+          setTimeout(() => setStatus("idle"), 1800);
+        } catch {
+          setStatus("error");
+          setTimeout(() => setStatus("idle"), 3000);
+        }
+      }}
+      className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md border px-3 py-2 text-xs transition-all duration-180 ease-calm ${
+        status === "saved"
+          ? "border-ink/20 text-ink-muted"
+          : status === "error"
+          ? "border-red-300 text-red-600"
+          : "border-hairline text-ink-soft hover:border-ink/20 hover:text-ink"
+      }`}
+      aria-live="polite"
+    >
+      {status === "saving"
+        ? "Saving\u2026"
+        : status === "saved"
+        ? "Saved"
+        : status === "error"
+        ? "Failed"
+        : label}
+    </button>
+  );
+}
+
+// Thin wrapper around an input that auto-saves on blur and flashes
+// "Saved" briefly. For model names, rubric text, and similar fields
+// that don't need a manual Save button.
+function AutoSaveInput({
+  value,
+  onChange,
+  onSave,
+  className,
+  ...rest
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, "onBlur"> & {
+  onSave: () => Promise<void>;
+}) {
+  const [flash, setFlash] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        {...rest}
+        className={className}
+        value={value}
+        onChange={onChange}
+        onBlur={async () => {
+          try {
+            await onSave();
+            setFlash(true);
+            setTimeout(() => setFlash(false), 1200);
+          } catch {
+            // silent — blur-save is best-effort
+          }
+        }}
+      />
+      <span
+        className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-ink-faint transition-opacity duration-300 ${
+          flash ? "opacity-100" : "opacity-0"
+        }`}
+        aria-live="polite"
+      >
+        {flash ? "Saved" : ""}
+      </span>
+    </div>
+  );
+}
+
+// Auto-save textarea with the same flash pattern. Used for the rubric.
+function RubricTextarea({
+  value,
+  onChange,
+  onSave,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSave: () => Promise<void>;
+}) {
+  const [flash, setFlash] = useState(false);
+  return (
+    <div className="relative">
+      <textarea
+        className={`${inputCls} min-h-[120px] resize-y font-mono text-xs`}
+        value={value}
+        placeholder={
+          "# Engineering Ladder\n\n## L3 — Mid-level\n- Technical execution: ...\n- Collaboration: ...\n\n## L4 — Senior\n- Technical execution: ...\n- Collaboration: ..."
+        }
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={async () => {
+          try {
+            await onSave();
+            setFlash(true);
+            setTimeout(() => setFlash(false), 1200);
+          } catch {
+            // silent
+          }
+        }}
+      />
+      <span
+        className={`pointer-events-none absolute right-2 bottom-3 text-[10px] text-ink-faint transition-opacity duration-300 ${
+          flash ? "opacity-100" : "opacity-0"
+        }`}
+        aria-live="polite"
+      >
+        {flash ? "Saved" : ""}
+      </span>
+    </div>
   );
 }

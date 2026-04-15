@@ -39,7 +39,7 @@ See [`docs/screenshots/`](docs/screenshots/) for the reference list and capture 
 - **Promo readiness** -- Gap analysis against target level with cited evidence
 - **Local memory** -- Observed facts persisted as plain markdown files you can open in Obsidian, grep, or commit to a private repo
 - **Keyboard-first UI** -- Command palette (Cmd+K), citation scroll, session history
-- **Zero telemetry** -- Nothing phones home. The founder cannot see your sessions.
+- **Zero telemetry** -- Nothing phones home. Keepr cannot see your sessions.
 
 ## Tech Stack
 
@@ -101,7 +101,7 @@ Evidence items get stable `ev_N` IDs. The LLM cites by ID only; the app resolves
 
 The honest version:
 
-- **Keepr operates no servers.** There is no backend, no analytics, no telemetry. The founder cannot see your sessions.
+- **Keepr operates no servers.** There is no backend, no analytics, no telemetry. Keepr cannot see your sessions.
 - **Your data still leaves your laptop in two specific ways:**
   1. To Slack and GitHub (and optionally Jira/Linear) -- the original sources. You already trust them with this data.
   2. To whichever LLM provider you configured. Raw Slack message content and PR descriptions flow into their API for synthesis. This is the main remaining trust surface.

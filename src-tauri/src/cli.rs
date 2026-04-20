@@ -17,7 +17,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const GITHUB_REPO: &str = "keeprhq/keepr";
+const GITHUB_REPO: &str = "keeprlabs/keepr";
 
 // ---- DB helpers (via system sqlite3) --------------------------------------
 
@@ -146,7 +146,7 @@ fn cmd_open(session: Option<i64>, prep: Option<String>) -> Result<(), String> {
         format!(
             "Failed to launch Keepr: {e}\n\
              Make sure Keepr.app is in /Applications.\n\
-             Install via: brew install --cask keeprhq/tap/keepr"
+             Install via: brew install --cask keeprlabs/tap/keepr"
         )
     })?;
 

@@ -1,8 +1,8 @@
 {
-  "name": "keeprhq-keepr",
+  "name": "keeprlabs-keepr",
   "owner": {
-    "name": "keeprhq",
-    "email": "hello@keeprhq.com"
+    "name": "keeprlabs",
+    "email": "hello@keeprlabs.com"
   },
   "plugins": [
     {

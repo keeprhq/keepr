@@ -27,7 +27,7 @@ This Code of Conduct applies within all community spaces, including issues, pull
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainers at **keeprhq** on GitHub. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainers at **keeprlabs** on GitHub. All complaints will be reviewed and investigated promptly and fairly.
 
 Project maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, issues, and other contributions that are not aligned to this Code of Conduct.
 

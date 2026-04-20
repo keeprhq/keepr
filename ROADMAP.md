@@ -8,7 +8,7 @@ Claude Code plugin and CLI surface.
 
 - **CLI subcommands** — `keepr cli status`, `open`, `add-followup`, `pulse`, `check-update`
 - **Claude Code plugin** — five skills for follow-ups, status, team pulse from the terminal
-- **Homebrew cask** — `brew install --cask keeprhq/tap/keepr` with auto-update on release
+- **Homebrew cask** — `brew install --cask keeprlabs/tap/keepr` with auto-update on release
 - **Update notifications** — desktop banner + CLI check + plugin hints
 
 ## v0.2.0 — shipped

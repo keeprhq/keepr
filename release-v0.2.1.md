@@ -6,11 +6,11 @@ Use Keepr from your terminal. Capture follow-ups, check status, and trigger team
 
 ```bash
 # Desktop app (required)
-brew install --cask keeprhq/tap/keepr
+brew install --cask keeprlabs/tap/keepr
 
 # Claude Code plugin
-/plugin marketplace add keeprhq/keepr
-/plugin install keepr@keeprhq-keepr
+/plugin marketplace add keeprlabs/keepr
+/plugin install keepr@keeprlabs-keepr
 ```
 
 ## What's new
@@ -50,7 +50,7 @@ Skills activate contextually — mention wanting to track something for a 1:1 an
 ### Homebrew
 
 ```bash
-brew install --cask keeprhq/tap/keepr
+brew install --cask keeprlabs/tap/keepr
 brew upgrade --cask keepr
 ```
 

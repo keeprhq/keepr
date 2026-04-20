@@ -11,7 +11,7 @@ const CURRENT_VERSION: string =
   typeof __KEEPR_VERSION__ !== "undefined" ? __KEEPR_VERSION__ : "0.2.1";
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const STORAGE_KEY = "keepr_update_check";
-const GITHUB_API = "https://api.github.com/repos/keeprhq/keepr/releases/latest";
+const GITHUB_API = "https://api.github.com/repos/keeprlabs/keepr/releases/latest";
 
 interface CachedCheck {
   checkedAt: number;

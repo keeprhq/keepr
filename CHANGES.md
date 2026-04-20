@@ -30,7 +30,7 @@ Plugin lives in `plugin/` with five skills:
 - `keepr-pulse` — trigger team pulse generation
 
 Each skill checks for `keepr` on PATH first. If missing, invokes the setup
-skill which installs via `brew install --cask keeprhq/tap/keepr`.
+skill which installs via `brew install --cask keeprlabs/tap/keepr`.
 
 Update detection: every skill runs `keepr cli check-update` and mentions
 available updates to the user.
@@ -38,7 +38,7 @@ available updates to the user.
 ### Homebrew cask
 
 - `homebrew/keepr.rb` — cask formula installing Keepr.app + symlink to `/usr/local/bin/keepr`
-- Release workflow auto-updates the cask SHA and pushes to `keeprhq/homebrew-tap`
+- Release workflow auto-updates the cask SHA and pushes to `keeprlabs/homebrew-tap`
 
 ### Update notifications
 

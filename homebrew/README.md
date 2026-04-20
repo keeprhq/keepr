@@ -1,13 +1,13 @@
 # Homebrew Tap for Keepr
 
 This directory contains the Homebrew cask formula for Keepr. It is automatically
-pushed to the [`keeprhq/homebrew-tap`](https://github.com/keeprhq/homebrew-tap)
+pushed to the [`keeprlabs/homebrew-tap`](https://github.com/keeprlabs/homebrew-tap)
 repository on each release.
 
 ## Install
 
 ```bash
-brew install --cask keeprhq/tap/keepr
+brew install --cask keeprlabs/tap/keepr
 ```
 
 This installs Keepr to `/Applications/Keepr.app` and symlinks the binary to
@@ -27,24 +27,24 @@ brew uninstall --cask keepr
 
 ## Setup for the tap repo
 
-The `keeprhq/homebrew-tap` repo needs:
+The `keeprlabs/homebrew-tap` repo needs:
 
 1. A `Casks/` directory containing `keepr.rb`
 2. A deploy key (`TAP_DEPLOY_KEY` secret in the main keepr repo) with write
-   access to `keeprhq/homebrew-tap`
+   access to `keeprlabs/homebrew-tap`
 
 The release workflow automatically:
 1. Builds the signed DMG
 2. Computes its SHA256
 3. Updates the version and SHA in `keepr.rb`
-4. Pushes to `keeprhq/homebrew-tap`
+4. Pushes to `keeprlabs/homebrew-tap`
 
 ### Creating the tap repo
 
 ```bash
-# Create the repo on GitHub: keeprhq/homebrew-tap
+# Create the repo on GitHub: keeprlabs/homebrew-tap
 # Then:
-git clone git@github.com:keeprhq/homebrew-tap.git
+git clone git@github.com:keeprlabs/homebrew-tap.git
 cd homebrew-tap
 mkdir Casks
 cp /path/to/keepr/homebrew/keepr.rb Casks/
@@ -55,6 +55,6 @@ git add . && git commit -m "Initial cask" && git push
 
 ```bash
 ssh-keygen -t ed25519 -C "keepr-tap-deploy" -f keepr-tap-key -N ""
-# Add keepr-tap-key.pub as a deploy key (with write access) on keeprhq/homebrew-tap
-# Add keepr-tap-key as TAP_DEPLOY_KEY secret on keeprhq/keepr
+# Add keepr-tap-key.pub as a deploy key (with write access) on keeprlabs/homebrew-tap
+# Add keepr-tap-key as TAP_DEPLOY_KEY secret on keeprlabs/keepr
 ```

@@ -35,7 +35,7 @@ which brew 2>/dev/null
 
 **If Homebrew is available**, install via cask:
 ```bash
-brew install --cask keeprhq/tap/keepr
+brew install --cask keeprlabs/tap/keepr
 ```
 
 Then verify:
@@ -53,7 +53,7 @@ keepr cli version
 >
 > Then run:
 > ```
-> brew install --cask keeprhq/tap/keepr
+> brew install --cask keeprlabs/tap/keepr
 > ```
 
 Do NOT attempt to download or install the `.dmg` directly. The Homebrew cask handles signing verification, PATH setup, and future updates.

@@ -1,6 +1,6 @@
 # Keepr Plugin for Claude Code
 
-> **Requires the Keepr desktop app.** Install it first: `brew install --cask keeprhq/tap/keepr`
+> **Requires the Keepr desktop app.** Install it first: `brew install --cask keeprlabs/tap/keepr`
 
 This plugin lets you trigger Keepr actions directly from Claude Code. Follow-ups, status checks, and team pulses — without leaving your terminal.
 
@@ -8,11 +8,11 @@ This plugin lets you trigger Keepr actions directly from Claude Code. Follow-ups
 
 ```bash
 # 1. Install the desktop app (if you haven't)
-brew install --cask keeprhq/tap/keepr
+brew install --cask keeprlabs/tap/keepr
 
 # 2. Add the plugin marketplace and install
-/plugin marketplace add keeprhq/keepr
-/plugin install keepr@keeprhq-keepr
+/plugin marketplace add keeprlabs/keepr
+/plugin install keepr@keeprlabs-keepr
 ```
 
 ## Skills
@@ -44,7 +44,7 @@ brew upgrade --cask keepr
 ## Troubleshooting
 
 **"keepr: command not found"**
-Run `/keepr:keepr-setup` to install, or manually: `brew install --cask keeprhq/tap/keepr`
+Run `/keepr:keepr-setup` to install, or manually: `brew install --cask keeprlabs/tap/keepr`
 
 **"Keepr database not found"**
 Open the desktop app first to complete initial setup: `keepr cli open`

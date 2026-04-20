@@ -1,0 +1,15 @@
+{
+  "name": "keeprlabs-keepr",
+  "owner": {
+    "name": "keeprlabs",
+    "email": "hello@keeprlabs.com"
+  },
+  "plugins": [
+    {
+      "name": "keepr",
+      "source": "./plugin",
+      "description": "AI memory layer for engineering leaders — follow-ups, team pulse, 1:1 prep from Claude Code.",
+      "version": "0.2.2"
+    }
+  ]
+}

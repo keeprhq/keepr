@@ -7,9 +7,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/keeprhq/keepr/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
-  <a href="https://github.com/keeprhq/keepr/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/keeprhq/keepr/ci.yml?branch=main&label=CI" alt="Build Status" /></a>
-  <a href="https://github.com/keeprhq/keepr/releases/latest"><img src="https://img.shields.io/github/v/release/keeprhq/keepr?include_prereleases&label=release" alt="Release" /></a>
+  <a href="https://github.com/keeprlabs/keepr/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
+  <a href="https://github.com/keeprlabs/keepr/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/keeprlabs/keepr/ci.yml?branch=main&label=CI" alt="Build Status" /></a>
+  <a href="https://github.com/keeprlabs/keepr/releases/latest"><img src="https://img.shields.io/github/v/release/keeprlabs/keepr?include_prereleases&label=release" alt="Release" /></a>
 </p>
 
 ---
@@ -57,7 +57,7 @@ Point it at your Slack workspace and a handful of GitHub repos, pick an LLM prov
 You need **Node 20+**, **Rust (stable)**, and **npm**.
 
 ```bash
-git clone https://github.com/keeprhq/keepr.git
+git clone https://github.com/keeprlabs/keepr.git
 cd keepr
 npm install
 npx tauri dev
@@ -88,11 +88,11 @@ Keepr has a [Claude Code plugin](./plugin/) that lets you capture follow-ups, ch
 
 ```bash
 # Install the desktop app first
-brew install --cask keeprhq/tap/keepr
+brew install --cask keeprlabs/tap/keepr
 
-# Then add the plugin
-/plugin marketplace add keeprhq/keepr
-/plugin install keepr@keepr
+# Then add the plugin marketplace and install
+/plugin marketplace add keeprlabs/keepr
+/plugin install keepr@keeprlabs-keepr
 ```
 
 **Available skills:**

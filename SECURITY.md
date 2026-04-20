@@ -11,7 +11,7 @@
 
 If you discover a security vulnerability in Keepr, please report it responsibly. **Do not open a public GitHub issue.**
 
-Email the maintainer directly or use [GitHub's private vulnerability reporting](https://github.com/keeprhq/keepr/security/advisories/new).
+Email the maintainer directly or use [GitHub's private vulnerability reporting](https://github.com/keeprlabs/keepr/security/advisories/new).
 
 When reporting, please include:
 

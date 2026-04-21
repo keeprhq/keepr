@@ -180,7 +180,7 @@ jobs:
           cp homebrew/keepr.rb /tmp/homebrew-tap/Casks/keepr.rb
           cd /tmp/homebrew-tap
           git config user.name "keepr-bot"
-          git config user.email "bot@keeprlabs.com"
+          git config user.email "bot@keeprlabs.org"
           git add Casks/keepr.rb
           git diff --cached --quiet || git commit -m "Update keepr to ${{ steps.version.outputs.version }}"
           git push origin main

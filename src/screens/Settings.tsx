@@ -24,7 +24,13 @@ import { DEFAULT_CONFIG, DEFAULT_FEATURE_FLAGS } from "../lib/types";
 import { GitHubIcon, SlackIcon, JiraIcon, LinearIcon } from "../components/primitives/SourceBadge";
 import { ChipGrid, SourceChip } from "../components/onboarding/primitives";
 
-export function Settings() {
+export function Settings({
+  focusKind,
+}: {
+  /** When rendered via the RunOverlay "Fix in Settings" button with a single
+   *  broken integration kind, scroll that panel into view on mount. */
+  focusKind?: "slack" | "github" | "jira" | "linear";
+} = {}) {
   const [cfg, setCfg] = useState<AppConfig>(DEFAULT_CONFIG);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [slackChannels, setSlackChannels] = useState<slack.SlackChannel[]>([]);
@@ -69,6 +75,21 @@ export function Settings() {
   useEffect(() => {
     load();
   }, []);
+
+  // Scroll to a specific integration panel when caller (typically the
+  // RunOverlay "Fix in Settings" button) passed a focusKind. Runs once per
+  // mount — the panel's id anchor is scrolled into view after the first
+  // paint so the layout has settled.
+  useEffect(() => {
+    if (!focusKind) return;
+    const id = `panel-${focusKind}`;
+    // Tiny timeout so the section is painted and measurable.
+    const t = setTimeout(() => {
+      const el = document.getElementById(id);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+    return () => clearTimeout(t);
+  }, [focusKind]);
 
   // Auto-load gating: if the user has no prior selections for Slack/GitHub,
   // kick off the lister on first open so they see chips without clicking.
@@ -704,8 +725,14 @@ const PANEL_ICONS: Record<string, React.ReactNode> = {
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   const icon = PANEL_ICONS[title];
+  // Stable id anchor per integration panel so the RunOverlay "Fix in
+  // Settings" button can scroll to the right one via focusKind.
+  const anchor = `panel-${title.toLowerCase()}`;
   return (
-    <section className="hair-b mb-10 pb-10 last:mb-0 last:pb-0 last:border-0">
+    <section
+      id={anchor}
+      className="hair-b mb-10 pb-10 last:mb-0 last:pb-0 last:border-0 scroll-mt-16"
+    >
       <div className="grid grid-cols-[180px_1fr] gap-10">
         <h2 className="flex items-center gap-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
           {icon}

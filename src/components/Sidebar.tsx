@@ -16,7 +16,13 @@ export type ViewKey =
   | { kind: "followups" }
   | { kind: "heatmap" }
   | { kind: "graph" }
-  | { kind: "settings" }
+  | {
+      kind: "settings";
+      /** When navigating from the RunOverlay "Fix in Settings" button with
+       *  a single broken integration kind, scroll that panel into view on
+       *  mount. */
+      focusKind?: "slack" | "github" | "jira" | "linear";
+    }
   | { kind: "onboarding" };
 
 interface Props {

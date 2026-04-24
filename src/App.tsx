@@ -47,6 +47,7 @@ import type {
   TeamMember,
   WorkflowType,
 } from "./lib/types";
+import type { IntegrationKind } from "./services/pulseOutcome";
 
 export default function App() {
   const [ready, setReady] = useState(false);
@@ -62,6 +63,15 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [runState, setRunState] = useState<RunState | null>(null);
   const runControllerRef = useRef<AbortController | null>(null);
+  // Stash the args of the last workflow dispatch so the RunOverlay's
+  // "Try N days" button can re-run the same workflow/target with a longer
+  // window. Set inside runWithOverlay on every dispatch; read by
+  // handleTryLongerWindow below.
+  const lastRunArgsRef = useRef<{
+    workflow: WorkflowType;
+    targetMember?: TeamMember;
+    startDetail: string;
+  } | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const showArchivedRef = useRef(showArchived);
   showArchivedRef.current = showArchived;
@@ -192,6 +202,15 @@ export default function App() {
       const controller = new AbortController();
       runControllerRef.current = controller;
 
+      // Remember args so "Try N days" can re-dispatch the same workflow
+      // with a longer window. daysBack is NOT stashed — it's the only
+      // thing that differs on retry.
+      lastRunArgsRef.current = {
+        workflow: args.workflow,
+        targetMember: args.targetMember,
+        startDetail: args.startDetail,
+      };
+
       setRunState({ stage: "fetch", detail: args.startDetail });
       try {
         const runner = demoMode ? runDemoWorkflow : runWorkflow;
@@ -204,9 +223,6 @@ export default function App() {
             setRunState({ stage: stage as RunState["stage"], detail }),
         });
         await refresh();
-        // Step 3/5 will render dedicated terminal states for empty /
-        // partial_failure / total_failure. For now: success navigates to
-        // the new session; the others just clear the overlay quietly.
         if (r.kind === "ready") {
           setRunState({ stage: "done" });
           setTimeout(() => {
@@ -214,7 +230,10 @@ export default function App() {
             setView({ kind: "session", id: r.sessionId });
           }, 500);
         } else {
-          setRunState(null);
+          // empty / partial_failure / total_failure — render the outcome
+          // view in the overlay. User dismisses (or acts on a button) to
+          // clear it.
+          setRunState({ stage: "done", outcome: r });
         }
       } catch (err: any) {
         if (isAbortError(err)) {
@@ -236,6 +255,41 @@ export default function App() {
   const cancelRun = useCallback(() => {
     runControllerRef.current?.abort();
   }, []);
+
+  // "Try N days" — re-dispatch the most recent workflow with a longer
+  // window. If somehow the ref is empty (shouldn't be — the button only
+  // renders after a run terminated with an outcome), fall back to a
+  // generic team pulse.
+  const handleTryLongerWindow = useCallback(
+    (nextDaysBack: number) => {
+      const last = lastRunArgsRef.current;
+      if (!last) {
+        void runWithOverlay({
+          workflow: "team_pulse",
+          daysBack: nextDaysBack,
+          startDetail: "Starting…",
+        });
+        return;
+      }
+      void runWithOverlay({
+        workflow: last.workflow,
+        targetMember: last.targetMember,
+        daysBack: nextDaysBack,
+        startDetail: last.startDetail,
+      });
+    },
+    [runWithOverlay]
+  );
+
+  // "Fix in Settings" / "Adjust sources" — clear the overlay and navigate
+  // to Settings. focusKind (if passed) scrolls to that panel.
+  const handleFixInSettings = useCallback(
+    (focusKind?: IntegrationKind) => {
+      setRunState(null);
+      setView({ kind: "settings", focusKind });
+    },
+    []
+  );
 
   const runTeamPulse = useCallback(
     (daysBack = 7) =>
@@ -597,7 +651,7 @@ export default function App() {
           {view.kind === "followups" && <FollowUps members={members} />}
           {view.kind === "heatmap" && <TeamHeatmap members={members} />}
           {view.kind === "graph" && <ThreadGraph members={members} />}
-          {view.kind === "settings" && <Settings />}
+          {view.kind === "settings" && <Settings focusKind={view.focusKind} />}
           </div>
         </main>
       </div>
@@ -614,6 +668,8 @@ export default function App() {
         state={runState}
         onDismiss={() => setRunState(null)}
         onCancel={cancelRun}
+        onTryLongerWindow={handleTryLongerWindow}
+        onFixInSettings={handleFixInSettings}
       />
       {demoMode && <DemoPill onExit={handleExitDemo} />}
     </div>

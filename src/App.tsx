@@ -204,11 +204,18 @@ export default function App() {
             setRunState({ stage: stage as RunState["stage"], detail }),
         });
         await refresh();
-        setRunState({ stage: "done" });
-        setTimeout(() => {
+        // Step 3/5 will render dedicated terminal states for empty /
+        // partial_failure / total_failure. For now: success navigates to
+        // the new session; the others just clear the overlay quietly.
+        if (r.kind === "ready") {
+          setRunState({ stage: "done" });
+          setTimeout(() => {
+            setRunState(null);
+            setView({ kind: "session", id: r.sessionId });
+          }, 500);
+        } else {
           setRunState(null);
-          setView({ kind: "session", id: r.sessionId });
-        }, 500);
+        }
       } catch (err: any) {
         if (isAbortError(err)) {
           // User cancelled. Pipeline already deleted the session row

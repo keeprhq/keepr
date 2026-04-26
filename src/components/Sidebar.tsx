@@ -342,7 +342,7 @@ function ConnectedSection({ integrations }: { integrations: Array<{ provider: st
       </button>
       {open && (
         <div className="mb-3 flex flex-col gap-1.5">
-          {["anthropic", "github", "slack", "jira", "linear"].map((p) => {
+          {["anthropic", "github", "gitlab", "slack", "jira", "linear"].map((p) => {
             const integ = integrations.find((i) => i.provider === p);
             const state = integ?.status === "active" ? "ok" : integ ? "warn" : "off";
             const icon = providerIcon(p, 14);

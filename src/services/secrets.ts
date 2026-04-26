@@ -22,6 +22,7 @@ export const SECRET_KEYS = {
   // SECRET_KEYS[provider] is always defined, even when the value is unused.
   codex: "llm.codex.key",
   github: "github.token",
+  gitlab: "gitlab.token",
   slackBot: "slack.bot_token",
   slackClientId: "slack.client_id",
   slackClientSecret: "slack.client_secret",

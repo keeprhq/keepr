@@ -15,7 +15,10 @@
     "shell:allow-open",
     {
       "identifier": "shell:allow-execute",
-      "allow": [{ "name": "claude", "cmd": "claude", "args": true }]
+      "allow": [
+        { "name": "claude", "cmd": "claude", "args": true },
+        { "name": "codex", "cmd": "codex", "args": true }
+      ]
     },
     "opener:default",
     "opener:allow-open-url",

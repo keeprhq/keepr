@@ -13,7 +13,7 @@ import {
   Title,
 } from "./primitives";
 import { SECRET_KEYS, getSecret, setSecret } from "../../services/secrets";
-import { getProvider, setCustomConfig, type LLMProviderId } from "../../services/llm";
+import { friendlyProviderError, getProvider, setCustomConfig, type LLMProviderId } from "../../services/llm";
 import { getConfig, setConfig, upsertIntegration } from "../../services/db";
 
 const PROVIDERS: Array<{
@@ -313,34 +313,3 @@ function keyFormatProblem(
   return null;
 }
 
-function friendlyProviderError(e: any, provider: LLMProviderId): string {
-  const raw = (e?.message || String(e) || "").toLowerCase();
-  // Log the raw provider response to the DevTools console so the user
-  // (or a support thread) can see exactly what came back without us
-  // leaking it onto the onboarding screen.
-  // eslint-disable-next-line no-console
-  console.error("[keepr] provider test failed:", e?.message || e);
-  if (raw.includes("credit_balance_too_low") || raw.includes("billing") || raw.includes("insufficient")) {
-    return "The key is valid but the account has no API credits. Add a payment method + top up at platform.claude.com/settings/billing.";
-  }
-  if (raw.includes("401") || raw.includes("unauthorized") || raw.includes("invalid_api_key") || raw.includes("invalid x-api-key")) {
-    if (provider === "anthropic") {
-      return "Anthropic rejected that key (401). Possible causes: (1) the key was deactivated, (2) the account has no API billing set up at platform.claude.com/settings/billing, (3) you copied a truncated key. Check the DevTools console for the raw response and try creating a fresh key.";
-    }
-    if (provider === "custom") {
-      return "Your endpoint returned 401 — check the API key or auth configuration.";
-    }
-    const host = new URL(getProvider(provider).keyUrl).host;
-    return `That key didn't authorize. Double-check you copied it from ${host}.`;
-  }
-  if (raw.includes("429") || raw.includes("rate")) {
-    return "Rate-limited on the test call. Wait a few seconds and try again.";
-  }
-  if (raw.includes("scope") || raw.includes("not allowed") || raw.includes("forbidden on")) {
-    return "The Tauri HTTP scope is blocking this host. This is an Keepr bug — please file an issue.";
-  }
-  if (raw.includes("network") || raw.includes("fetch") || raw.includes("failed to connect")) {
-    return "Couldn't reach the provider. Check your network and try again.";
-  }
-  return e?.message || "Test call failed.";
-}

@@ -121,6 +121,21 @@ Eight places need touching. Listed in dependency order.
 already gated by `allow-spawn` — you can only kill processes you
 spawned, and you can only spawn binaries in the spawn allowlist.
 
+Filesystem permissions also need extending so the Codex hermetic tempdir
+(`/var/folders/.../T/keepr-codex-...` on macOS) can be created and read:
+
+```json
+"fs:allow-temp-read-recursive",
+"fs:allow-temp-write-recursive",
+"fs:allow-mkdir",
+"fs:allow-remove"
+```
+
+`fs:default` covers basic read/write but the temp-scope variants and the
+mkdir/remove operation permissions are separate identifiers. Without
+them `mkdir` on a `tempDir()` path throws "forbidden path" before the
+codex spawn even fires.
+
 ### 2. Provider implementation (`src/services/llm.ts`)
 
 A new `codex: LLMProvider` object alongside `claudeCode`:

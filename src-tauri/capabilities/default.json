@@ -40,6 +40,10 @@
     "fs:allow-document-write-recursive",
     "fs:allow-app-read-recursive",
     "fs:allow-app-write-recursive",
+    "fs:allow-temp-read-recursive",
+    "fs:allow-temp-write-recursive",
+    "fs:allow-mkdir",
+    "fs:allow-remove",
     {
       "identifier": "http:default",
       "allow": [

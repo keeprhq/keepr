@@ -213,25 +213,65 @@ describe("codex.complete", () => {
     ).rejects.toThrow(/some auth error/);
   });
 
-  it("passes the hardening flags codex exec actually accepts (-s read-only, --skip-git-repo-check, --ephemeral, --json)", async () => {
-    // codex v0.125 doesn't have `--ask-for-approval` on the exec subcommand
-    // (exec is non-interactive by definition). It DOES require
-    // `--skip-git-repo-check` when running outside a git repo, which our
-    // hermetic tempdir is not. Regression: an earlier draft passed
-    // `--ask-for-approval never` and the spawn failed at runtime with
-    // "unexpected argument".
+  it("spawns through `sh -c 'exec codex ... < /dev/null'` to close stdin", async () => {
+    // Regression: codex CLI v0.125 hangs forever when stdin is a pipe (Tauri
+    // default) because it waits for EOF to append the stdin block. Tauri's
+    // shell plugin exposes no way to close child stdin, so we wrap in sh.
+    // `exec codex ...` makes codex replace sh at that PID so child.kill()
+    // still works on the abort path. `< /dev/null` is the actual fix.
+    FakeCommand.plan = { stdout: [], exitCode: 0 };
+    const fs = await import("@tauri-apps/plugin-fs");
+    fakeFiles.set("/tmp/last-message.txt", "ok"); // not used but harmless
+    (fs.readTextFile as any).mockResolvedValueOnce("ok");
+    await PROVIDERS.codex.complete({ model: "gpt-5.4", messages: [{ role: "user", content: "x" }] });
+
+    expect(FakeCommand.lastInstance?.program).toBe("sh");
+    const args = FakeCommand.lastInstance?.args || [];
+    expect(args[0]).toBe("-c");
+    const cmdLine = args[1] || "";
+    expect(cmdLine).toMatch(/^exec 'codex' /);
+    expect(cmdLine).toMatch(/< \/dev\/null$/);
+  });
+
+  it("forwards the hardening flags codex exec actually accepts (-s read-only, --skip-git-repo-check, --ephemeral, --json)", async () => {
+    // codex v0.125 doesn't have `--ask-for-approval` on the exec subcommand.
+    // It DOES require `--skip-git-repo-check` (our hermetic tempdir isn't a
+    // git repo). Earlier drafts passed `--ask-for-approval never`; spawn
+    // failed at runtime with "unexpected argument".
     FakeCommand.plan = { stdout: [], exitCode: 0 };
     const fs = await import("@tauri-apps/plugin-fs");
     (fs.readTextFile as any).mockResolvedValueOnce("ok");
-    await PROVIDERS.codex.complete({ model: "gpt-5", messages: [{ role: "user", content: "x" }] });
-    const args = FakeCommand.lastInstance?.args || [];
-    expect(args).toContain("-s");
-    expect(args[args.indexOf("-s") + 1]).toBe("read-only");
-    expect(args).toContain("--skip-git-repo-check");
-    expect(args).toContain("--ephemeral");
-    expect(args).toContain("--json");
+    await PROVIDERS.codex.complete({ model: "gpt-5.4", messages: [{ role: "user", content: "x" }] });
+    const cmdLine = FakeCommand.lastInstance?.args?.[1] || "";
+    expect(cmdLine).toContain("'-s' 'read-only'");
+    expect(cmdLine).toContain("'--skip-git-repo-check'");
+    expect(cmdLine).toContain("'--ephemeral'");
+    expect(cmdLine).toContain("'--json'");
     // Anti-regression: do NOT include the flag that doesn't exist.
-    expect(args).not.toContain("--ask-for-approval");
+    expect(cmdLine).not.toContain("--ask-for-approval");
+  });
+
+  it("shell-escapes the prompt safely (single quotes use the POSIX `'\"'\"'` escape)", async () => {
+    // The prompt is user-content; if shQuote is wrong, a malicious prompt
+    // could close its quoted region and inject shell. Test the structural
+    // property: every embedded `'` in the prompt expands to the POSIX
+    // four-char escape sequence `'"'"'` in the rendered command line.
+    FakeCommand.plan = { stdout: [], exitCode: 0 };
+    const fs = await import("@tauri-apps/plugin-fs");
+    (fs.readTextFile as any).mockResolvedValueOnce("ok");
+    const evilPrompt = "'; rm -rf /; echo '";
+    await PROVIDERS.codex.complete({
+      model: "gpt-5.4",
+      messages: [{ role: "user", content: evilPrompt }],
+    });
+    const cmdLine = FakeCommand.lastInstance?.args?.[1] || "";
+    // The two embedded single quotes in the prompt should each become the
+    // POSIX escape sequence — proves shQuote did its job.
+    const escapeCount = (cmdLine.match(/'"'"'/g) || []).length;
+    expect(escapeCount).toBeGreaterThanOrEqual(2);
+    // And the cmd line must still terminate with the stdin redirect, not
+    // with anything from the evil payload.
+    expect(cmdLine.endsWith("< /dev/null")).toBe(true);
   });
 
   it("aborts the spawn when opts.signal fires", async () => {

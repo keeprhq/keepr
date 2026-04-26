@@ -17,7 +17,8 @@
       "identifier": "shell:allow-spawn",
       "allow": [
         { "name": "claude", "cmd": "claude", "args": true },
-        { "name": "codex", "cmd": "codex", "args": true }
+        { "name": "codex", "cmd": "codex", "args": true },
+        { "name": "sh", "cmd": "sh", "args": true }
       ]
     },
     "shell:allow-kill",

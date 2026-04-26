@@ -111,11 +111,16 @@ Eight places need touching. Listed in dependency order.
   "identifier": "shell:allow-spawn",
   "allow": [
     { "name": "claude", "cmd": "claude", "args": true },
-    { "name": "codex",  "cmd": "codex",  "args": true }
+    { "name": "codex",  "cmd": "codex",  "args": true },
+    { "name": "sh",     "cmd": "sh",     "args": true }
   ]
 },
 "shell:allow-kill"
 ```
+
+`sh` is allowlisted because the codex spawn is wrapped in
+`sh -c "exec codex ... < /dev/null"` to close stdin (see provider impl
+section for why).
 
 `allow-kill` is global (no per-binary filter), but the trust surface is
 already gated by `allow-spawn` — you can only kill processes you
@@ -178,6 +183,24 @@ event stream (or whichever event includes `usage` — verify against codex
 v0.x docs at implementation time). On parse failure (codex outputs
 something unexpected), fall back to `{ input_tokens: 0, output_tokens: 0 }`
 and log a warning to DevTools console.
+
+**Stdin handling (critical):**
+
+Tauri's shell plugin spawns children with stdin attached to a pipe and
+exposes no JS API to close it. Codex CLI v0.125 docs explicitly say:
+"If stdin is piped and a prompt is also provided, stdin is appended as
+a `<stdin>` block." So codex waits for EOF on stdin → the call hangs
+forever. Manual E2E hit this immediately — codex spawned with the
+right flags but never returned.
+
+Workaround: wrap the spawn in `sh -c "exec codex ... < /dev/null"`.
+- `< /dev/null` gives codex an immediate EOF on stdin.
+- `exec codex` makes codex replace `sh` at the same PID, so the abort
+  path's `child.kill()` still kills the real process (no orphan).
+- The shell helper `runCliShellWrapped` quotes args via a POSIX-safe
+  `shQuote` (single-quote wrap with `'"'"'` escape for embedded `'`).
+
+Tauri capability needs `sh` added to the `shell:allow-spawn` allowlist.
 
 **Cancellation:**
 

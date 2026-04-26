@@ -349,6 +349,39 @@ interface RunCliOpts {
   onStdoutLine?: (line: string) => void;
 }
 
+/** POSIX shell single-quote any string. Wraps the input in `'...'` and
+ *  escapes embedded single quotes by ending the quoted region, inserting a
+ *  literal `'`, and reopening the quoted region: `'` -> `'"'"'`. Safe for
+ *  arbitrary content (newlines, JSON, shell metachars). */
+function shQuote(s: string): string {
+  return "'" + s.replace(/'/g, `'"'"'`) + "'";
+}
+
+/** Run a CLI through `sh -c` so we can redirect stdin from /dev/null.
+ *
+ *  WHY THIS EXISTS: Tauri's shell plugin spawns children with stdin attached
+ *  to a pipe and exposes no JS API to close it. Some CLIs (Codex CLI v0.125
+ *  in particular) interpret a piped-but-open stdin as "more prompt is
+ *  coming" and block until EOF — which never arrives, so the process hangs
+ *  forever. The official Codex docs say: "If stdin is piped and a prompt
+ *  is also provided, stdin is appended as a `<stdin>` block."
+ *
+ *  Workaround: wrap the call in `sh -c 'exec <bin> <args> < /dev/null'`.
+ *  - `exec` makes the CLI replace `sh` at the same PID so child.kill() on
+ *    the abort path still kills the real process (no orphan).
+ *  - `< /dev/null` gives the CLI an immediate EOF on stdin so it stops
+ *    waiting for input.
+ *
+ *  Returns the same shape as runCli, just spawned through sh. */
+async function runCliShellWrapped(
+  program: string,
+  args: string[],
+  opts: RunCliOpts = {}
+): Promise<RunCliResult> {
+  const cmdLine = "exec " + [program, ...args].map(shQuote).join(" ") + " < /dev/null";
+  return runCli("sh", ["-c", cmdLine], opts);
+}
+
 interface RunCliResult {
   code: number | null;
   stdout: string;
@@ -676,7 +709,9 @@ const codex: LLMProvider = {
       ];
 
       const eventLines: string[] = [];
-      const result = await runCli("codex", args, {
+      // Wrapped in sh so stdin is closed (`< /dev/null`) — codex would
+      // otherwise block forever waiting for stdin EOF. See runCliShellWrapped.
+      const result = await runCliShellWrapped("codex", args, {
         signal: opts.signal,
         onStdoutLine: (line) => {
           // Tauri may emit a chunk with embedded newlines; split on \n so the
@@ -813,7 +848,9 @@ export async function probeCodex(force = false): Promise<ProbeResult> {
       ];
       let result: RunCliResult;
       try {
-        result = await runCli("codex", args);
+        // Same sh-wrapper trick as codex.complete: codex would hang waiting
+        // for stdin EOF on a Tauri-spawned pipe.
+        result = await runCliShellWrapped("codex", args);
       } catch (e: any) {
         // runCli throws when the spawn itself fails (binary missing), so the
         // error message carries "command not found" or similar.
